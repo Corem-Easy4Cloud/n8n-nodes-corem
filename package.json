@@ -15,6 +15,9 @@
     "type": "git",
     "url": "https://github.com/Corem-Easy4Cloud/n8n-nodes-corem.git"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "n8n-node build",
     "build:watch": "tsc --watch",
