@@ -20,6 +20,12 @@ interface TeamApiItem {
 	nome: string;
 }
 
+interface UserApiItem {
+	id: number;
+	nome: string;
+	cognome: string;
+}
+
 // Lists (sites/companies/roles/teams) are not paginated: Corem always
 // returns them in full in a single call.
 const makeListLoader = <T>(
@@ -90,4 +96,24 @@ export const getTeamsForAttendance = makeListLoader<TeamApiItem>(
 	'/teams',
 	{ si: 'true', permesso: 'presenza.riepilogo' },
 	teamOption,
+);
+
+// Scoped to the documento.crea permission: the sites/teams/users a document
+// can actually be shared with by the linked service account.
+export const getSitesForDocument = makeListLoader<SiteApiItem>(
+	'/sedi',
+	{ si: 'true', permesso: 'documento.crea' },
+	siteOption,
+);
+export const getTeamsForDocument = makeListLoader<TeamApiItem>(
+	'/teams',
+	{ si: 'true', permesso: 'documento.crea' },
+	teamOption,
+);
+// GET /utenti has no si=true/permesso-scoped variant like sedi/societa/teams:
+// its scoped variant instead takes "fields" (which fields to return).
+export const getUsersForDocument = makeListLoader<UserApiItem>(
+	'/utenti',
+	{ fields: 'id,nome,cognome', permesso: 'documento.crea' },
+	(user) => ({ name: `${user.nome} ${user.cognome}`, value: user.id }),
 );

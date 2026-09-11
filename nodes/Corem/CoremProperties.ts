@@ -7,6 +7,7 @@ export const resourceProperty: INodeProperties = {
 	noDataExpression: true,
 	options: [
 		{ name: 'Attendance', value: 'attendance' },
+		{ name: 'Document', value: 'document' },
 		{ name: 'Email', value: 'email' },
 		{ name: 'Request', value: 'request' },
 		{ name: 'User', value: 'user' },
@@ -44,6 +45,12 @@ export const operationProperties: INodeProperties[] = [
 				description: 'Change the status of a request (leave, permit, ...)',
 				action: 'Change the status of a request',
 			},
+			{
+				name: 'Get',
+				value: 'get',
+				description: 'Get an existing request by ID',
+				action: 'Get a request',
+			},
 		],
 		default: 'changeStatus',
 	},
@@ -59,6 +66,12 @@ export const operationProperties: INodeProperties[] = [
 				value: 'create',
 				description: 'Create a new user',
 				action: 'Create a user',
+			},
+			{
+				name: 'Get',
+				value: 'get',
+				description: 'Get an existing user by ID',
+				action: 'Get a user',
 			},
 		],
 		default: 'create',
@@ -78,6 +91,28 @@ export const operationProperties: INodeProperties[] = [
 			},
 		],
 		default: 'exportSummary',
+	},
+	{
+		displayName: 'Operation',
+		name: 'operation',
+		type: 'options',
+		noDataExpression: true,
+		displayOptions: { show: { resource: ['document'] } },
+		options: [
+			{
+				name: 'Create',
+				value: 'create',
+				description: 'Create a new document with an attachment',
+				action: 'Create a document',
+			},
+			{
+				name: 'Get',
+				value: 'get',
+				description: 'Get an existing document by ID',
+				action: 'Get a document',
+			},
+		],
+		default: 'create',
 	},
 ];
 
@@ -117,7 +152,7 @@ export const requestFields: INodeProperties[] = [
 		type: 'number',
 		default: '',
 		required: true,
-		displayOptions: { show: { resource: ['request'], operation: ['changeStatus'] } },
+		displayOptions: { show: { resource: ['request'], operation: ['changeStatus', 'get'] } },
 	},
 	{
 		displayName: 'Status',
@@ -143,6 +178,14 @@ export const requestFields: INodeProperties[] = [
 ];
 
 export const userFields: INodeProperties[] = [
+	{
+		displayName: 'User ID',
+		name: 'userId',
+		type: 'number',
+		default: '',
+		required: true,
+		displayOptions: { show: { resource: ['user'], operation: ['get'] } },
+	},
 	{
 		displayName: 'First Name',
 		name: 'firstName',
@@ -305,5 +348,78 @@ export const attendanceFields: INodeProperties[] = [
 		default: 'data',
 		description: 'Name of the binary property to which the exported Excel file will be written',
 		displayOptions: { show: { resource: ['attendance'], operation: ['exportSummary'] } },
+	},
+];
+
+export const documentFields: INodeProperties[] = [
+	{
+		displayName: 'Document ID',
+		name: 'documentId',
+		type: 'number',
+		default: '',
+		required: true,
+		displayOptions: { show: { resource: ['document'], operation: ['get'] } },
+	},
+	{
+		displayName: 'Title',
+		name: 'title',
+		type: 'string',
+		default: '',
+		required: true,
+		displayOptions: { show: { resource: ['document'], operation: ['create'] } },
+	},
+	{
+		displayName: 'Input Binary Field',
+		name: 'inputBinaryField',
+		type: 'string',
+		default: 'data',
+		required: true,
+		description: 'Name of the input binary property containing the attachment to upload',
+		displayOptions: { show: { resource: ['document'], operation: ['create'] } },
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: { show: { resource: ['document'], operation: ['create'] } },
+		options: [
+			{ displayName: 'Description', name: 'description', type: 'string', default: '' },
+			{
+				displayName: 'Read Only',
+				name: 'readOnly',
+				type: 'boolean',
+				default: false,
+				description: 'Whether the document can only be viewed, not edited, by those it is shared with',
+			},
+			{
+				displayName: 'Site Names or IDs',
+				name: 'siteIds',
+				type: 'multiOptions',
+				typeOptions: { loadOptionsMethod: 'getSitesForDocument' },
+				default: [],
+				description:
+					'Sites to share the document with. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+			},
+			{
+				displayName: 'Team Names or IDs',
+				name: 'teamIds',
+				type: 'multiOptions',
+				typeOptions: { loadOptionsMethod: 'getTeamsForDocument' },
+				default: [],
+				description:
+					'Teams to share the document with. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+			},
+			{
+				displayName: 'User Names or IDs',
+				name: 'userIds',
+				type: 'multiOptions',
+				typeOptions: { loadOptionsMethod: 'getUsersForDocument' },
+				default: [],
+				description:
+					'Users to share the document with. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+			},
+		],
 	},
 ];
