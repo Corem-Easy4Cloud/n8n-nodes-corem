@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-corem",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "n8n community node for Corem (HR / attendance management platform)",
   "license": "MIT",
   "homepage": "https://corem.cloud",
