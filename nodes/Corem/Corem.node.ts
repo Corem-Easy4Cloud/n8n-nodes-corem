@@ -234,18 +234,10 @@ export class Corem implements INodeType {
 						utenteIds: additionalFields.userIds || [],
 					};
 
-					const response = await coremMultipartRequest.call(this, '/workflow/documenti', {
-						documento: {
-							value: JSON.stringify(documento),
-							options: { contentType: 'application/json' },
-						},
-						file: {
-							value: attachmentBuffer,
-							options: {
-								filename: attachment.fileName || 'document',
-								contentType: attachment.mimeType,
-							},
-						},
+					const response = await coremMultipartRequest.call(this, '/workflow/documenti', documento, {
+						buffer: attachmentBuffer,
+						filename: attachment.fileName || 'document',
+						contentType: attachment.mimeType,
 					});
 					returnData.push({ json: response as IDataObject, pairedItem: { item: i } });
 					continue;
