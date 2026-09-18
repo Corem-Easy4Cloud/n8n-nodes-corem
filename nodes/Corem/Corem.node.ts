@@ -20,6 +20,7 @@ import { coremMultipartRequest, coremRequest } from './CoremRequest';
 import {
 	getCompaniesForAttendance,
 	getCompaniesForUser,
+	getRequestTypes,
 	getRoles,
 	getSitesForAttendance,
 	getSitesForDocument,
@@ -27,7 +28,10 @@ import {
 	getTeamsForAttendance,
 	getTeamsForDocument,
 	getUsersForDocument,
+	getUsersForRequestCreate,
+	getUsersForRequestSearch,
 } from './loadOptions';
+import { getRequestFields } from './resourceMapping';
 
 export class Corem implements INodeType {
 	description: INodeTypeDescription = {
@@ -65,6 +69,12 @@ export class Corem implements INodeType {
 			getSitesForDocument,
 			getTeamsForDocument,
 			getUsersForDocument,
+			getRequestTypes,
+			getUsersForRequestSearch,
+			getUsersForRequestCreate,
+		},
+		resourceMapping: {
+			getRequestFields,
 		},
 	};
 
@@ -76,7 +86,9 @@ export class Corem implements INodeType {
 		const supportedCombinations = [
 			'email.send',
 			'request.changeStatus',
+			'request.create',
 			'request.get',
+			'request.search',
 			'user.create',
 			'user.get',
 			'attendance.exportSummary',
@@ -116,6 +128,77 @@ export class Corem implements INodeType {
 					const requestId = this.getNodeParameter('requestId', i) as number;
 					const response = await coremRequest.call(this, 'GET', `/richieste/${requestId}`);
 					returnData.push({ json: response as IDataObject, pairedItem: { item: i } });
+					continue;
+				}
+
+				if (resource === 'request' && operation === 'create') {
+					const requestTypeId = this.getNodeParameter('requestTypeId', i) as number;
+					const onBehalfOfUserId = this.getNodeParameter('requestOnBehalfOfUserId', i, '') as string;
+					const initialStatus = this.getNodeParameter('requestInitialStatus', i, '') as string;
+					const requestData = this.getNodeParameter('requestData', i) as {
+						value: Record<string, string | number | boolean | null> | null;
+					};
+					const values = requestData.value ?? {};
+
+					const datiRichiesta = Object.keys(values)
+						.filter((key) => key.startsWith('dato_'))
+						.map((key) => ({
+							id: Number(key.slice('dato_'.length)),
+							valore: values[key] == null ? '' : String(values[key]),
+						}));
+
+					const body: IDataObject = { tipo: { id: requestTypeId }, datiRichiesta };
+					if (onBehalfOfUserId) body.utenteId = Number(onBehalfOfUserId);
+					if (initialStatus) body.stato = initialStatus;
+
+					const response = await coremRequest.call(this, 'POST', '/richieste', body);
+					returnData.push({ json: response as IDataObject, pairedItem: { item: i } });
+					continue;
+				}
+
+				if (resource === 'request' && operation === 'search') {
+					const requestId = this.getNodeParameter('searchRequestId', i, '') as string;
+					const requestTypeId = this.getNodeParameter('searchRequestTypeId', i, '') as string;
+					const authorId = this.getNodeParameter('searchAuthorId', i, '') as string;
+					const status = this.getNodeParameter('searchStatus', i, '') as string;
+					const startDate = this.getNodeParameter('searchStartDate', i, '') as string;
+					const endDate = this.getNodeParameter('searchEndDate', i, '') as string;
+					const limit = this.getNodeParameter('searchLimit', i, 100) as number;
+
+					const qs: IDataObject = {
+						personali: 'false',
+						page: '0',
+						page_size: String(limit),
+						order_by: 'data_creazione',
+						order_type: 'DESC',
+					};
+					// All filters below are combinable (e.g. ID + type together, to confirm a
+					// specific request is of a given type) - they are never mutually exclusive.
+					if (requestId) qs.ids = requestId;
+					if (requestTypeId) qs.tipo = requestTypeId;
+					if (authorId) qs.autore = authorId;
+					if (status) qs.stato = status;
+					if (startDate) qs.start = startDate.slice(0, 10);
+					if (endDate) qs.end = endDate.slice(0, 10);
+
+					const response = (await coremRequest.call(this, 'GET', '/richieste', undefined, qs)) as {
+						count: number;
+						items: IDataObject[];
+					};
+
+					// The Paginatore's total count has no natural place on an array of items:
+					// attach it to every returned row (or to a single placeholder row when
+					// there are no matches), so it survives whichever result the next node reads.
+					if (response.items.length === 0) {
+						returnData.push({ json: { count: response.count }, pairedItem: { item: i } });
+					} else {
+						for (const item of response.items) {
+							returnData.push({
+								json: { ...item, count: response.count },
+								pairedItem: { item: i },
+							});
+						}
+					}
 					continue;
 				}
 

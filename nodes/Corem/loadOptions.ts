@@ -26,6 +26,11 @@ interface UserApiItem {
 	cognome: string;
 }
 
+interface RequestTypeApiItem {
+	id: number;
+	etichetta: string;
+}
+
 // Lists (sites/companies/roles/teams) are not paginated: Corem always
 // returns them in full in a single call.
 const makeListLoader = <T>(
@@ -115,5 +120,30 @@ export const getTeamsForDocument = makeListLoader<TeamApiItem>(
 export const getUsersForDocument = makeListLoader<UserApiItem>(
 	'/utenti',
 	{ fields: 'id,nome,cognome', permesso: 'documento.crea' },
+	(user) => ({ name: `${user.nome} ${user.cognome}`, value: user.id }),
+);
+
+// GET /richieste/tipi?si=true requires no permission: any user who can create or
+// list requests can pick any request type, the actual restriction happens at
+// POST /richieste time (via the richiesta.crea/aperturaContoTerzi permissions).
+export const getRequestTypes = makeListLoader<RequestTypeApiItem>(
+	'/richieste/tipi',
+	{ si: 'true' },
+	(type) => ({ name: type.etichetta, value: type.id }),
+);
+
+// Scoped to richiesta.elencaAltrui: the same users whose requests can be listed
+// via the "Search" operation.
+export const getUsersForRequestSearch = makeListLoader<UserApiItem>(
+	'/utenti',
+	{ fields: 'id,nome,cognome', permesso: 'richiesta.elencaAltrui' },
+	(user) => ({ name: `${user.nome} ${user.cognome}`, value: user.id }),
+);
+
+// Scoped to richiesta.aperturaContoTerzi, distinct from the read-only permission
+// above: the users a request can actually be created "on behalf of".
+export const getUsersForRequestCreate = makeListLoader<UserApiItem>(
+	'/utenti',
+	{ fields: 'id,nome,cognome', permesso: 'richiesta.aperturaContoTerzi' },
 	(user) => ({ name: `${user.nome} ${user.cognome}`, value: user.id }),
 );
